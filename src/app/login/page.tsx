@@ -4,61 +4,60 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Cpu, ShieldCheck, Mail, Lock, User, AlertCircle } from "lucide-react";
+import { Cpu, ShieldCheck, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
-function AuthFormContent() {
-  const { user, login, register } = useAuth();
+function LoginFormContent() {
+  const { user, login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Switch between login and register tabs
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  // Sync tab from URL query params
+  // Check for success messages from query params (e.g. redirected after password reset)
   useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    if (tabParam === "register") {
-      setActiveTab("register");
-    } else {
-      setActiveTab("login");
+    const message = searchParams.get("message");
+    if (message) {
+      setInfoMessage(message);
     }
   }, [searchParams]);
 
   // Redirect if user session already exists
   useEffect(() => {
     if (user) {
-      router.push("/dashboard");
+      router.push("/");
     }
   }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setError("Please fill in all required credentials.");
+    
+    // Clear previous errors and info messages
+    setError(null);
+    setInfoMessage(null);
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
       return;
     }
-    if (activeTab === "register" && password.length < 6) {
+
+    // Validate password requirements
+    if (!password.trim() || password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
     }
 
-    setError(null);
     setLoading(true);
 
     try {
-      if (activeTab === "login") {
-        await login(email, password);
-      } else {
-        await register(email, password, name);
-      }
-      router.push("/dashboard");
+      await login(email, password);
+      router.push("/");
     } catch (err: any) {
       setError(err.message || "Authentication failed. Please check credentials.");
     } finally {
@@ -67,7 +66,7 @@ function AuthFormContent() {
   };
 
   return (
-    <div className="min-h-screen grid-bg relative flex flex-col justify-center items-center px-4 overflow-hidden">
+    <div className="min-h-screen grid-bg relative flex flex-col justify-center items-center px-4 overflow-hidden bg-[#0B1020]">
       {/* Glow backgrounds */}
       <div className="absolute top-[-20%] left-[-20%] w-[60vw] h-[60vw] radial-glow-blue -z-10 pointer-events-none opacity-50" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[60vw] h-[60vw] radial-glow-cyan -z-10 pointer-events-none opacity-40" />
@@ -83,65 +82,15 @@ function AuthFormContent() {
           </span>
         </Link>
 
-        <GlassCard hoverEffect={false} className="border-slate-800 shadow-2xl relative">
-          {/* Tabs header */}
-          <div className="flex gap-2 bg-slate-950 p-1 rounded-xl border border-white/5 mb-6">
-            <button
-              onClick={() => {
-                setActiveTab("login");
-                setError(null);
-              }}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === "login"
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab("register");
-                setError(null);
-              }}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === "register"
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              Register
-            </button>
-          </div>
-
+        <GlassCard hoverEffect={false} className="border-slate-800 shadow-2xl relative p-6">
           <div className="text-center mb-6">
-            <h2 className="text-lg font-bold text-slate-100">
-              {activeTab === "login" ? "Welcome Back" : "Create Account"}
-            </h2>
+            <h2 className="text-lg font-bold text-slate-100">Welcome Back</h2>
             <p className="text-xs text-slate-400 mt-1">
-              {activeTab === "login"
-                ? "Enter credentials to access prompt scores."
-                : "Register to unlock unlimited prompt testing."}
+              Enter credentials to access prompt scores.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {activeTab === "register" && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-300">Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-2.5 text-slate-500" size={14} />
-                  <input
-                    type="text"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs border border-white/10 bg-slate-950/40 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-200"
-                  />
-                </div>
-              </div>
-            )}
-
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-slate-300">Email Address</label>
               <div className="relative">
@@ -152,7 +101,7 @@ function AuthFormContent() {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-xs border border-white/10 bg-slate-950/40 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-200"
+                  className="w-full pl-9 pr-4 py-2.5 text-xs border border-white/10 bg-slate-950/40 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-200"
                 />
               </div>
             </div>
@@ -160,11 +109,9 @@ function AuthFormContent() {
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-semibold text-slate-300">Password</label>
-                {activeTab === "login" && (
-                  <span className="text-[10px] text-blue-400 hover:underline cursor-pointer">
-                    Forgot?
-                  </span>
-                )}
+                <Link href="/forgot-password" className="text-[10px] text-blue-400 hover:underline">
+                  Forgot Password?
+                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 text-slate-500" size={14} />
@@ -174,10 +121,17 @@ function AuthFormContent() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-xs border border-white/10 bg-slate-950/40 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-200"
+                  className="w-full pl-9 pr-4 py-2.5 text-xs border border-white/10 bg-slate-950/40 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-200"
                 />
               </div>
             </div>
+
+            {infoMessage && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs flex items-start gap-2">
+                <CheckCircle size={14} className="shrink-0 mt-0.5" />
+                <span>{infoMessage}</span>
+              </div>
+            )}
 
             {error && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs flex items-start gap-2">
@@ -197,21 +151,27 @@ function AuthFormContent() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Processing...
+                  Signing In...
                 </>
               ) : (
-                <>
-                  {activeTab === "login" ? "Sign In" : "Register Account"}
-                </>
+                "Sign In"
               )}
             </button>
           </form>
 
-          {/* Sandbox demo account notification */}
-          <div className="mt-5 border-t border-white/5 pt-4 text-center">
+          {/* Registration link */}
+          <div className="mt-5 pt-4 border-t border-white/5 text-center text-xs text-slate-400">
+            Don't have an account?{" "}
+            <Link href="/register" className="text-blue-400 font-bold hover:underline">
+              Register Here
+            </Link>
+          </div>
+
+          {/* Sandbox security badge */}
+          <div className="mt-4 pt-3 border-t border-white/5 text-center">
             <span className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
               <ShieldCheck size={12} className="text-blue-400" />
-              <span>Demo sandbox mode: any inputs credentials simulate instant session.</span>
+              <span>Only registered user accounts are allowed access.</span>
             </span>
           </div>
         </GlassCard>
@@ -220,7 +180,7 @@ function AuthFormContent() {
   );
 }
 
-export default function AuthPage() {
+export default function LoginPage() {
   return (
     <Suspense
       fallback={
@@ -232,7 +192,7 @@ export default function AuthPage() {
         </div>
       }
     >
-      <AuthFormContent />
+      <LoginFormContent />
     </Suspense>
   );
 }

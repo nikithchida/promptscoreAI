@@ -3,12 +3,12 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { Cpu, LayoutDashboard, LogOut, ChevronRight, User, Terminal, Home, GitCompare, Menu, X } from "lucide-react";
+import { Cpu, LayoutDashboard, LogOut, ChevronRight, User, Terminal, Home, GitCompare, Menu, X, FileDown } from "lucide-react";
 import Link from "next/link";
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  activeTab: "analyzer" | "templates" | "compare" | "dashboard";
+  activeTab: "home" | "analyzer" | "templates" | "compare" | "dashboard" | "reports" | "account";
 }
 
 export function AppLayout({ children, activeTab }: AppLayoutProps) {
@@ -16,10 +16,10 @@ export function AppLayout({ children, activeTab }: AppLayoutProps) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
-  // Auth Protection - Redirect to /auth if not authenticated
+  // Auth Protection - Redirect to /login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/auth");
+      router.push("/login");
     }
   }, [user, loading, router]);
 
@@ -36,11 +36,13 @@ export function AppLayout({ children, activeTab }: AppLayoutProps) {
   }
 
   const navItems = [
-    { id: "home", label: "Marketing Home", href: "/", icon: <Home size={15} /> },
+    { id: "home", label: "Home", href: "/", icon: <Home size={15} /> },
     { id: "analyzer", label: "Prompt Analyzer", href: "/analyzer", icon: <Terminal size={15} /> },
     { id: "templates", label: "Template Library", href: "/templates", icon: <Cpu size={15} /> },
     { id: "compare", label: "Prompt Compare", href: "/compare", icon: <GitCompare size={15} /> },
-    { id: "dashboard", label: "Dashboard History", href: "/dashboard", icon: <LayoutDashboard size={15} /> },
+    { id: "reports", label: "Reports & Exports", href: "/reports", icon: <FileDown size={15} /> },
+    { id: "dashboard", label: "Dashboard & History", href: "/dashboard", icon: <LayoutDashboard size={15} /> },
+    { id: "account", label: "Account Profile", href: "/account", icon: <User size={15} /> },
   ];
 
   return (
@@ -48,7 +50,7 @@ export function AppLayout({ children, activeTab }: AppLayoutProps) {
       {/* Sidebar navigation - desktop */}
       <aside className="hidden md:flex flex-col w-64 glass-panel border-r border-white/5 p-6 shrink-0 justify-between">
         <div className="flex flex-col gap-8">
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/dashboard" className="flex items-center gap-2 group">
             <div className="h-8 w-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm shadow-md group-hover:scale-105 transition-all">
               P
             </div>
@@ -101,7 +103,7 @@ export function AppLayout({ children, activeTab }: AppLayoutProps) {
 
       {/* Mobile Sticky Top Navbar */}
       <header className="flex md:hidden sticky top-0 z-30 glass-panel border-b border-white/5 py-4 px-6 justify-between items-center backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-md">
             P
           </div>

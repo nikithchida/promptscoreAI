@@ -1,10 +1,46 @@
 import { AnalysisResult } from "../contexts/prompt-context";
+import { isValidPrompt } from "./prompt-validator";
 
 // Centralized prompt evaluator
 export async function evaluatePrompt(
   promptText: string,
   category: string = "General"
 ): Promise<Partial<AnalysisResult>> {
+  const validation = isValidPrompt(promptText);
+  if (!validation.isValid) {
+    return {
+      id: `eval-${Math.random().toString(36).substring(2, 9)}`,
+      originalPrompt: promptText,
+      analyzedAt: new Date().toISOString(),
+      scores: {
+        overall: 0,
+        clarity: 0,
+        specificity: 0,
+        context: 0,
+        structure: 0,
+        creativity: 0,
+        predictability: 0,
+      },
+      feedback: {
+        strengths: [],
+        weaknesses: [],
+        missing: [],
+        opportunities: [],
+      },
+      optimized: {
+        standard: "",
+        professional: "",
+        beginner: "",
+        expert: "",
+        interview: "",
+        production: "",
+      },
+      isFavorite: false,
+      category,
+      isValid: false,
+    };
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (apiKey) {
@@ -30,10 +66,12 @@ You must output a strict JSON object structure:
     "opportunities": string[]
   },
   "optimized": {
-    "improved": "highly improved prompt incorporating context, constraints, and clarity",
+    "standard": "highly improved prompt incorporating context, constraints, and clarity",
     "professional": "expert/senior phrasing of the prompt with deep constraints and structures",
     "beginner": "simplified version of the prompt that is easy to customize and understand",
-    "concise": "shortest version of the prompt that still maintains core constraints and clarity"
+    "expert": "deeply technical and rigorous phrasing with expert domain constraints",
+    "interview": "structured as a mock interview prompt or scenario testing prompt with edge cases",
+    "production": "robust, production-ready system instruction prompt with strict schema requirements, error handling, and JSON/XML output constraints"
   }
 }
 
@@ -106,12 +144,12 @@ function runLocalAnalysisRules(promptText: string, category: string): Partial<An
   let creativity = Math.min(50 + (promptText.toLowerCase().includes("creativ") ? 30 : 10), 100);
   
   if (len < 15) {
-    clarity = 25;
-    specificity = 15;
-    contextScore = 10;
-    structure = 10;
-    predictability = 15;
-    creativity = 40;
+    clarity = 5;
+    specificity = 0;
+    contextScore = 0;
+    structure = 0;
+    predictability = 5;
+    creativity = 0;
   }
   
   const overall = Math.round((clarity * 0.25) + (specificity * 0.25) + (contextScore * 0.2) + (structure * 0.15) + (predictability * 0.15));
@@ -164,7 +202,7 @@ function runLocalAnalysisRules(promptText: string, category: string): Partial<An
   }
 
   const cleanPrompt = promptText.trim().replace(/\.+$/, "");
-  const improved = `${hasRole ? "" : "Act as an expert in this task. "}Please process: "${cleanPrompt}". ${hasFormat ? "" : "Format the output using clear markdown header tags and bullet points."} ${hasConstraints ? "" : "Keep explanations concise and practical, avoiding general filler."} ${hasContext ? "" : "Ensure the output is tailored for a professional reader looking for actionable items."}`;
+  const standard = `${hasRole ? "" : "Act as an expert in this task. "}Please process: "${cleanPrompt}". ${hasFormat ? "" : "Format the output using clear markdown header tags and bullet points."} ${hasConstraints ? "" : "Keep explanations concise and practical, avoiding general filler."} ${hasContext ? "" : "Ensure the output is tailored for a professional reader looking for actionable items."}`;
 
   const professional = `You are a Senior Advisor and Subject Matter Expert. Analyze and resolve the following initiative: 
 "${cleanPrompt}"
@@ -176,8 +214,29 @@ To ensure an optimal deliverable:
 
   const beginner = `I need help understanding or doing this: "${cleanPrompt}". Can you explain it in simple terms, step-by-step? Please use easy-to-understand language, avoid complex jargon, and give simple examples where appropriate to help me learn how this works.`;
 
-  const concise = `Execute the following directive: "${cleanPrompt}". 
-Deliver response in bullet points. Be direct, remove background explanations, and focus purely on the target resolution.`;
+  const expert = `Act as an elite domain specialist and research lead. Analyze the following request under rigorous academic and technical standards:
+"${cleanPrompt}"
+
+Provide a detailed, expert-level solution:
+1. Deconstruct the request into core theoretical and practical principles.
+2. Outline advanced methodologies, edge cases, and failure modes.
+3. Use domain-specific terminology with deep analysis.`;
+
+  const interview = `Act as an expert interviewer and technical assessor. Given the task description:
+"${cleanPrompt}"
+
+Formulate a response structured for an interview preparation scenario:
+1. Provide a step-by-step breakdown of how a top candidate would answer.
+2. Identify 3 critical follow-up questions the interviewer might ask.
+3. List key trade-offs and behavioral checkpoints related to this topic.`;
+
+  const production = `Act as a production-grade software system component. Execute the following directive with high robustness and error resilience:
+"${cleanPrompt}"
+
+Response specifications:
+- Format the output strictly as valid JSON conforming to a schema, or clear XML.
+- Provide comprehensive error handling, input validation notes, and boundary condition checks.
+- Do not output conversational preamble or postscript commentary. Pure structured data only.`;
 
   return {
     id: `eval-${Math.random().toString(36).substring(2, 9)}`,
@@ -199,10 +258,12 @@ Deliver response in bullet points. Be direct, remove background explanations, an
       opportunities,
     },
     optimized: {
-      improved,
+      standard,
       professional,
       beginner,
-      concise,
+      expert,
+      interview,
+      production,
     },
     isFavorite: false,
     category,

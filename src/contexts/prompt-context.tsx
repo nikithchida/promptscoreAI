@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./auth-context";
+import { isValidPrompt } from "@/lib/prompt-validator";
 
 export interface PromptScores {
   overall: number;
@@ -21,10 +22,12 @@ export interface DetailedFeedback {
 }
 
 export interface OptimizedPrompts {
-  improved: string;
+  standard: string;
   professional: string;
   beginner: string;
-  concise: string;
+  expert: string;
+  interview: string;
+  production: string;
 }
 
 export interface AnalysisResult {
@@ -37,6 +40,7 @@ export interface AnalysisResult {
   optimized: OptimizedPrompts;
   isFavorite: boolean;
   category?: string;
+  isValid?: boolean;
 }
 
 export interface PromptTemplate {
@@ -98,65 +102,8 @@ const MOCK_TEMPLATES: PromptTemplate[] = [
   },
 ];
 
-// Initial mock history for rich display out of the box
-const MOCK_INITIAL_HISTORY: AnalysisResult[] = [
-  {
-    id: "hist-1",
-    originalPrompt: "Write a python script that cleans CSV data.",
-    analyzedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-    scores: {
-      overall: 48,
-      clarity: 65,
-      specificity: 30,
-      context: 20,
-      structure: 25,
-      creativity: 50,
-      predictability: 35,
-    },
-    feedback: {
-      strengths: ["Clear primary objective (cleaning CSV data).", "Specifies the scripting language (Python)."],
-      weaknesses: ["No details on what defines 'clean' data.", "Missing structure or library constraints.", "No sample CSV structure provided."],
-      missing: ["Input CSV format and schema.", "Handling of null or corrupt rows.", "Specific cleanups (e.g., lowercase headers, strip spaces, trim dates)."],
-      opportunities: ["Assign a role to the AI (e.g., Data Engineer).", "Use pandas or csv native modules explicitly.", "Request output in a clean markdown codeblock."],
-    },
-    optimized: {
-      improved: "Act as a Python Data Engineer. Write a Python script using pandas to clean a CSV file named 'sales_data.csv'. The cleaning operations must: 1. Convert all column headers to snake_case. 2. Remove rows where the 'Email' column is empty. 3. Fill missing values in 'Quantity' with 0. 4. Format the 'OrderDate' column as YYYY-MM-DD. Provide the script inside a clean code block with brief explanations of the cleaning steps.",
-      professional: "You are an expert data pipeline developer. Build a production-ready Python utility script utilizing the `pandas` library to sanitize raw sales transaction logs loaded from a CSV path. The utility must include error logging, handle NaN values in numeric fields by imputing the column median, validate email addresses using regex, and output the cleaned DataFrame to a new CSV file. Ensure type hinting and docstrings are provided.",
-      beginner: "Help me write a Python program to clean up a CSV file. The file has columns named 'Name', 'Email', and 'Amount'. Please write a script that makes all names lowercase, removes rows where email is missing, and rounds the Amount column to 2 decimal places. Use comments to explain what each line of code does.",
-      concise: "Write a Python script using pandas to clean a CSV file. Steps: 1. Fill missing numeric values with 0. 2. Convert 'date' column to datetime. 3. Drop duplicate rows. Save output to 'clean.csv'. Include error handling.",
-    },
-    isFavorite: true,
-    category: "Development",
-  },
-  {
-    id: "hist-2",
-    originalPrompt: "Tell me how to make a landing page.",
-    analyzedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    scores: {
-      overall: 35,
-      clarity: 45,
-      specificity: 20,
-      context: 15,
-      structure: 10,
-      creativity: 60,
-      predictability: 20,
-    },
-    feedback: {
-      strengths: ["Clear topic focus (landing page design/creation)."],
-      weaknesses: ["Vague request that can lead to endless variations.", "No context about the product, industry, or target audience.", "No specification on format (e.g., guide, HTML code, design principles)."],
-      missing: ["Product details.", "Target audience profile.", "Conversion goal (e.g., email signups, product purchases).", "Desired tech stack (e.g., React, Tailwind, Webflow)."],
-      opportunities: ["Provide the landing page's copy theme.", "Specify section breakdowns (Hero, Features, Social Proof, CTA).", "Assign a conversion optimizer role."],
-    },
-    optimized: {
-      improved: "Act as a Senior Conversion Rate Optimization (CRO) expert. Outline a detailed, step-by-step layout guide for a landing page targeting software freelancers. The landing page is for a time-tracking SaaS. Include: 1. Hero Section copy hierarchy (headline, subhead, CTA). 2. Key structural components needed for high conversions. 3. Examples of social proof placement.",
-      professional: "You are a lead UX Designer and CRO specialist. Generate a modular structural blueprint and wireframe specification for a B2B SaaS landing page. The solution must address sign-up attrition by organizing content into a logical conversion funnel: Hero (unique value proposition, primary action), Social Proof ribbon, Feature Grid with contextual benefit descriptions, Testimonial cards, pricing comparison table, and a closing FAQ block. Detail UX copywriting guidelines for each.",
-      beginner: "I want to create a landing page for my new bakery shop. Explain the basic sections I need to put on the page, like the header, the about section, and how customers can contact me. Keep it simple and easy to understand for someone who has never built a website.",
-      concise: "Outline a conversion-focused landing page structure for a B2B SaaS product. List the 5 key sections needed from top to bottom, including layout guides and placeholder descriptions for a standard signup funnel.",
-    },
-    isFavorite: false,
-    category: "Marketing",
-  },
-];
+// No mock initial history for production users
+const MOCK_INITIAL_HISTORY: AnalysisResult[] = [];
 
 export function PromptProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -165,24 +112,87 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState<boolean>(true);
   const [templates] = useState<PromptTemplate[]>(MOCK_TEMPLATES);
 
-  // Initialize and load prompt history
+  // Initialize and load prompt history specific to the logged-in user
   useEffect(() => {
+    if (!user) {
+      setHistory([]);
+      setActiveAnalysis(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     const localHistory = localStorage.getItem("promptscore_history");
     if (localHistory) {
       try {
-        setHistory(JSON.parse(localHistory));
+        const parsed = JSON.parse(localHistory) as AnalysisResult[];
+        // Filter by user ID
+        const userHistory = parsed.filter(item => item.userId === user.id);
+        setHistory(userHistory);
+        if (userHistory.length > 0) {
+          setActiveAnalysis(userHistory[0]);
+        } else {
+          setActiveAnalysis(null);
+        }
       } catch (e) {
-        setHistory(MOCK_INITIAL_HISTORY);
+        setHistory([]);
+        setActiveAnalysis(null);
       }
     } else {
-      setHistory(MOCK_INITIAL_HISTORY);
-      localStorage.setItem("promptscore_history", JSON.stringify(MOCK_INITIAL_HISTORY));
+      setHistory([]);
+      setActiveAnalysis(null);
     }
     setLoading(false);
-  }, []);
+  }, [user]);
 
   const analyzePrompt = async (promptText: string, category: string = "General"): Promise<AnalysisResult> => {
     setLoading(true);
+    
+    const validation = isValidPrompt(promptText);
+    if (!validation.isValid) {
+      const result: AnalysisResult = {
+        id: `eval-${Math.random().toString(36).substring(2, 9)}`,
+        userId: user?.id,
+        originalPrompt: promptText,
+        analyzedAt: new Date().toISOString(),
+        scores: {
+          overall: 0,
+          clarity: 0,
+          specificity: 0,
+          context: 0,
+          structure: 0,
+          creativity: 0,
+          predictability: 0,
+        },
+        feedback: {
+          strengths: [],
+          weaknesses: [],
+          missing: [],
+          opportunities: [],
+        },
+        optimized: {
+          standard: "",
+          professional: "",
+          beginner: "",
+          expert: "",
+          interview: "",
+          production: "",
+        },
+        isFavorite: false,
+        category,
+        isValid: false,
+      };
+
+      const globalHistory = JSON.parse(localStorage.getItem("promptscore_history") || "[]") as AnalysisResult[];
+      const updatedGlobal = [result, ...globalHistory];
+      localStorage.setItem("promptscore_history", JSON.stringify(updatedGlobal));
+
+      setHistory([result, ...history]);
+      setActiveAnalysis(result);
+      setLoading(false);
+      return result;
+    }
+
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -200,9 +210,11 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
         userId: user?.id,
       };
 
-      const updatedHistory = [newAnalysis, ...history];
-      setHistory(updatedHistory);
-      localStorage.setItem("promptscore_history", JSON.stringify(updatedHistory));
+      const globalHistory = JSON.parse(localStorage.getItem("promptscore_history") || "[]") as AnalysisResult[];
+      const updatedGlobal = [newAnalysis, ...globalHistory];
+      localStorage.setItem("promptscore_history", JSON.stringify(updatedGlobal));
+
+      setHistory([newAnalysis, ...history]);
       setActiveAnalysis(newAnalysis);
       setLoading(false);
       return newAnalysis;
@@ -212,9 +224,12 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
       return new Promise((resolve) => {
         setTimeout(() => {
           const result = runLocalEvaluation(promptText, category, user?.id);
-          const updatedHistory = [result, ...history];
-          setHistory(updatedHistory);
-          localStorage.setItem("promptscore_history", JSON.stringify(updatedHistory));
+          
+          const globalHistory = JSON.parse(localStorage.getItem("promptscore_history") || "[]") as AnalysisResult[];
+          const updatedGlobal = [result, ...globalHistory];
+          localStorage.setItem("promptscore_history", JSON.stringify(updatedGlobal));
+
+          setHistory([result, ...history]);
           setActiveAnalysis(result);
           setLoading(false);
           resolve(result);
@@ -224,22 +239,33 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteAnalysis = (id: string) => {
-    const updated = history.filter((item) => item.id !== id);
-    setHistory(updated);
-    localStorage.setItem("promptscore_history", JSON.stringify(updated));
+    const updatedLocal = history.filter((item) => item.id !== id);
+    setHistory(updatedLocal);
+    
+    const globalHistory = JSON.parse(localStorage.getItem("promptscore_history") || "[]") as AnalysisResult[];
+    const updatedGlobal = globalHistory.filter((item) => item.id !== id);
+    localStorage.setItem("promptscore_history", JSON.stringify(updatedGlobal));
+
     if (activeAnalysis?.id === id) {
-      setActiveAnalysis(updated.length > 0 ? updated[0] : null);
+      setActiveAnalysis(updatedLocal.length > 0 ? updatedLocal[0] : null);
     }
   };
 
   const toggleFavorite = (id: string) => {
-    const updated = history.map((item) =>
+    const updatedLocal = history.map((item) =>
       item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
     );
-    setHistory(updated);
-    localStorage.setItem("promptscore_history", JSON.stringify(updated));
+    setHistory(updatedLocal);
+    
+    const globalHistory = JSON.parse(localStorage.getItem("promptscore_history") || "[]") as AnalysisResult[];
+    const updatedGlobal = globalHistory.map((item) =>
+      item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
+    );
+    localStorage.setItem("promptscore_history", JSON.stringify(updatedGlobal));
+
     if (activeAnalysis?.id === id) {
-      setActiveAnalysis({ ...activeAnalysis, isFavorite: !activeAnalysis.isFavorite });
+      const activeItem = updatedLocal.find((item) => item.id === id);
+      setActiveAnalysis(activeItem || null);
     }
   };
 
@@ -290,7 +316,43 @@ export function usePrompts() {
 }
 
 // Client-side helper rules for Prompt Scoring Fallback
-function runLocalEvaluation(promptText: string, category: string, userId?: string): AnalysisResult {
+export function runLocalEvaluation(promptText: string, category: string, userId?: string): AnalysisResult {
+  const validation = isValidPrompt(promptText);
+  if (!validation.isValid) {
+    return {
+      id: `eval-${Math.random().toString(36).substring(2, 9)}`,
+      userId,
+      originalPrompt: promptText,
+      analyzedAt: new Date().toISOString(),
+      scores: {
+        overall: 0,
+        clarity: 0,
+        specificity: 0,
+        context: 0,
+        structure: 0,
+        creativity: 0,
+        predictability: 0,
+      },
+      feedback: {
+        strengths: [],
+        weaknesses: [],
+        missing: [],
+        opportunities: [],
+      },
+      optimized: {
+        standard: "",
+        professional: "",
+        beginner: "",
+        expert: "",
+        interview: "",
+        production: "",
+      },
+      isFavorite: false,
+      category,
+      isValid: false,
+    };
+  }
+
   const len = promptText.length;
   const wordCount = promptText.split(/\s+/).filter(Boolean).length;
   
@@ -310,12 +372,12 @@ function runLocalEvaluation(promptText: string, category: string, userId?: strin
   let creativity = Math.min(50 + (promptText.toLowerCase().includes("creativ") ? 30 : 10), 100);
   
   if (len < 15) {
-    clarity = 25;
-    specificity = 15;
-    contextScore = 10;
-    structure = 10;
-    predictability = 15;
-    creativity = 40;
+    clarity = 5;
+    specificity = 0;
+    contextScore = 0;
+    structure = 0;
+    predictability = 5;
+    creativity = 0;
   }
   
   const overall = Math.round((clarity * 0.25) + (specificity * 0.25) + (contextScore * 0.2) + (structure * 0.15) + (predictability * 0.15));
@@ -370,7 +432,7 @@ function runLocalEvaluation(promptText: string, category: string, userId?: strin
 
   // Create optimizations based on content
   const cleanPrompt = promptText.trim().replace(/\.+$/, "");
-  const improved = `${hasRole ? "" : "Act as an expert in this task. "}Please process: "${cleanPrompt}". ${hasFormat ? "" : "Format the output using clear markdown header tags and bullet points."} ${hasConstraints ? "" : "Keep explanations concise and practical, avoiding general filler."} ${hasContext ? "" : "Ensure the output is tailored for a professional reader looking for actionable items."}`;
+  const standard = `${hasRole ? "" : "Act as an expert in this task. "}Please process: "${cleanPrompt}". ${hasFormat ? "" : "Format the output using clear markdown header tags and bullet points."} ${hasConstraints ? "" : "Keep explanations concise and practical, avoiding general filler."} ${hasContext ? "" : "Ensure the output is tailored for a professional reader looking for actionable items."}`;
 
   const professional = `You are a Senior Advisor and Subject Matter Expert. Analyze and resolve the following initiative: 
 "${cleanPrompt}"
@@ -382,8 +444,29 @@ To ensure an optimal deliverable:
 
   const beginner = `I need help understanding or doing this: "${cleanPrompt}". Can you explain it in simple terms, step-by-step? Please use easy-to-understand language, avoid complex jargon, and give simple examples where appropriate to help me learn how this works.`;
 
-  const concise = `Execute the following directive: "${cleanPrompt}". 
-Deliver response in bullet points. Be direct, remove background explanations, and focus purely on the target resolution.`;
+  const expert = `Act as an elite domain specialist and research lead. Analyze the following request under rigorous academic and technical standards:
+"${cleanPrompt}"
+
+Provide a detailed, expert-level solution:
+1. Deconstruct the request into core theoretical and practical principles.
+2. Outline advanced methodologies, edge cases, and failure modes.
+3. Use domain-specific terminology with deep analysis.`;
+
+  const interview = `Act as an expert interviewer and technical assessor. Given the task description:
+"${cleanPrompt}"
+
+Formulate a response structured for an interview preparation scenario:
+1. Provide a step-by-step breakdown of how a top candidate would answer.
+2. Identify 3 critical follow-up questions the interviewer might ask.
+3. List key trade-offs and behavioral checkpoints related to this topic.`;
+
+  const production = `Act as a production-grade software system component. Execute the following directive with high robustness and error resilience:
+"${cleanPrompt}"
+
+Response specifications:
+- Format the output strictly as valid JSON conforming to a schema, or clear XML.
+- Provide comprehensive error handling, input validation notes, and boundary condition checks.
+- Do not output conversational preamble or postscript commentary. Pure structured data only.`;
 
   return {
     id: `eval-${Math.random().toString(36).substring(2, 9)}`,
@@ -406,10 +489,12 @@ Deliver response in bullet points. Be direct, remove background explanations, an
       opportunities,
     },
     optimized: {
-      improved,
+      standard,
       professional,
       beginner,
-      concise,
+      expert,
+      interview,
+      production,
     },
     isFavorite: false,
     category,

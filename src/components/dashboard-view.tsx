@@ -6,6 +6,7 @@ import { ScoringSystem } from "./scoring-system";
 import { DetailedFeedback } from "./detailed-feedback";
 import { PromptOptimizer } from "./prompt-optimizer";
 import { GlassCard } from "./ui/glass-card";
+import { InvalidPromptWarning } from "./invalid-prompt-warning";
 import {
   Search,
   Star,
@@ -17,7 +18,9 @@ import {
   Award,
   Layers,
   History,
-  FileDown
+  FileDown,
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 
 interface DashboardViewProps {
@@ -25,7 +28,7 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ onLoadPromptToEditor }: DashboardViewProps) {
-  const { history, activeAnalysis, setActiveAnalysis, deleteAnalysis, toggleFavorite } = usePrompts();
+  const { history, activeAnalysis, setActiveAnalysis, deleteAnalysis, toggleFavorite, analyzePrompt } = usePrompts();
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<"all" | "favorites" | "Development" | "Marketing" | "Writing" | "Business">("all");
   
@@ -47,7 +50,10 @@ export function DashboardView({ onLoadPromptToEditor }: DashboardViewProps) {
     if (history.length === 0) return { total: 0, avg: 0, favorites: 0 };
     const total = history.length;
     const favorites = history.filter((h) => h.isFavorite).length;
-    const avg = Math.round(history.reduce((sum, curr) => sum + curr.scores.overall, 0) / total);
+    const validHistory = history.filter((h) => h.isValid !== false);
+    const avg = validHistory.length > 0 
+      ? Math.round(validHistory.reduce((sum, curr) => sum + curr.scores.overall, 0) / validHistory.length) 
+      : 0;
     return { total, avg, favorites };
   }, [history]);
 
@@ -123,7 +129,7 @@ export function DashboardView({ onLoadPromptToEditor }: DashboardViewProps) {
 
               <div class="list-group">
                 <h3>Optimized Version</h3>
-                <div class="prompt-section">${analysis.optimized.improved}</div>
+                <div class="prompt-section">${analysis.optimized.standard}</div>
               </div>
               
               <script>
@@ -180,187 +186,222 @@ export function DashboardView({ onLoadPromptToEditor }: DashboardViewProps) {
       </div>
 
       {/* Main dashboard columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Sidebar: history listing */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <GlassCard hoverEffect={false} className="p-4" delay={0.25}>
-            <div className="flex items-center gap-2 mb-4">
-              <History size={16} className="text-blue-500" />
-              <h4 className="font-bold text-sm text-slate-200">History Log</h4>
-            </div>
+      {history.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Sidebar: history listing */}
+          <div className="lg:col-span-4 flex flex-col gap-4">
+            <GlassCard hoverEffect={false} className="p-4" delay={0.25}>
+              <div className="flex items-center gap-2 mb-4">
+                <History size={16} className="text-blue-500" />
+                <h4 className="font-bold text-sm text-slate-200">History Log</h4>
+              </div>
 
-            {/* Search inputs */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
-              <input
-                type="text"
-                placeholder="Search history..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl text-xs border border-white/10 bg-slate-950/60 focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/40 focus:outline-none placeholder-slate-500 text-slate-200"
-              />
-            </div>
+              {/* Search inputs */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
+                <input
+                  type="text"
+                  placeholder="Search history..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-xl text-xs border border-white/10 bg-slate-950/60 focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/40 focus:outline-none placeholder-slate-500 text-slate-200"
+                />
+              </div>
 
-            {/* Filter buttons scrollable */}
-            <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-white/5 no-scrollbar scroll-smooth">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 ${
-                  filter === "all" ? "bg-blue-500/15 text-blue-300 border-blue-500/20" : "text-slate-400 border-transparent hover:text-slate-200"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilter("favorites")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 flex items-center gap-1 ${
-                  filter === "favorites" ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" : "text-slate-400 border-transparent hover:text-slate-200"
-                }`}
-              >
-                <Star size={10} className="fill-current" /> Favorites
-              </button>
-              {["Development", "Marketing", "Writing", "Business"].map((cat) => (
+              {/* Filter buttons scrollable */}
+              <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-white/5 no-scrollbar scroll-smooth">
                 <button
-                  key={cat}
-                  onClick={() => setFilter(cat as any)}
+                  onClick={() => setFilter("all")}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 ${
-                    filter === cat ? "bg-blue-500/15 text-blue-300 border-blue-500/20" : "text-slate-400 border-transparent hover:text-slate-200"
+                    filter === "all" ? "bg-blue-500/15 text-blue-300 border-blue-500/20" : "text-slate-400 border-transparent hover:text-slate-200"
                   }`}
                 >
-                  {cat}
+                  All
                 </button>
-              ))}
-            </div>
-
-            {/* List scrollbox */}
-            <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-1">
-              {filteredHistory.length > 0 ? (
-                filteredHistory.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => setActiveAnalysis(item)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative group flex justify-between items-center ${
-                      activeAnalysis?.id === item.id
-                        ? "bg-blue-500/10 border-blue-500/30"
-                        : "bg-slate-900/10 border-white/5 hover:border-blue-500/25 hover:bg-slate-900/40"
+                <button
+                  onClick={() => setFilter("favorites")}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 flex items-center gap-1 ${
+                    filter === "favorites" ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" : "text-slate-400 border-transparent hover:text-slate-200"
+                  }`}
+                >
+                  <Star size={10} className="fill-current" /> Favorites
+                </button>
+                {["Development", "Marketing", "Writing", "Business"].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setFilter(cat as any)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 ${
+                      filter === cat ? "bg-blue-500/15 text-blue-300 border-blue-500/20" : "text-slate-400 border-transparent hover:text-slate-200"
                     }`}
                   >
-                    <div className="flex-1 min-w-0 pr-2">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border bg-slate-900 uppercase ${
-                          item.scores.overall >= 80 ? "text-emerald-400 border-emerald-500/20" : "text-amber-400 border-amber-500/20"
-                        }`}>
-                          {item.scores.overall}%
-                        </span>
-                        {item.category && (
-                          <span className="text-[9px] text-slate-500 font-bold uppercase">{item.category}</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-300 truncate font-mono">{item.originalPrompt}</p>
-                    </div>
-
-                    {/* Actions on hover/select */}
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(item.id);
-                        }}
-                        className={`p-1.5 rounded-lg border border-transparent hover:bg-slate-800 transition-colors ${
-                          item.isFavorite ? "text-yellow-400" : "text-slate-500 hover:text-yellow-400"
-                        }`}
-                      >
-                        <Star size={11} className={item.isFavorite ? "fill-current" : ""} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteAnalysis(item.id);
-                        }}
-                        className="p-1.5 rounded-lg border border-transparent hover:bg-red-500/15 text-slate-500 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="py-8 text-center text-xs text-slate-500 italic">No search entries found.</div>
-              )}
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* Right Panel: selected item details */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          {activeAnalysis ? (
-            <div className="flex flex-col gap-6">
-              {/* Header card with action bars */}
-              <GlassCard hoverEffect={false} className="py-4 px-6 border-white/5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-md font-bold text-slate-100 flex items-center gap-1.5">
-                      <Layers size={16} className="text-blue-500" /> Analysis Report Details
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Prompt categorized as <strong className="text-blue-300">{activeAnalysis.category || "General"}</strong> • 
-                      Analyzed {new Date(activeAnalysis.analyzedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onLoadPromptToEditor(activeAnalysis.originalPrompt)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-300 hover:bg-blue-500/20 transition-all flex items-center gap-1"
-                    >
-                      <Copy size={12} /> Edit Original
-                    </button>
-
-                    <button
-                      onClick={() => handleDownloadPdf(activeAnalysis)}
-                      disabled={exportingId === activeAnalysis.id}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-white/5 flex items-center gap-1"
-                    >
-                      <FileDown size={12} /> {exportingId === activeAnalysis.id ? "Saving..." : "PDF"}
-                    </button>
-
-                    <button
-                      onClick={() => handleExportJson(activeAnalysis)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-white/5 flex items-center gap-1"
-                      title="Export analysis as JSON"
-                    >
-                      <Download size={12} /> JSON
-                    </button>
-                  </div>
-                </div>
-              </GlassCard>
-
-              {/* Score breakdown charts */}
-              <ScoringSystem scores={activeAnalysis.scores} />
-
-              {/* Feedbacks bullet box list */}
-              <DetailedFeedback feedback={activeAnalysis.feedback} />
-
-              {/* Side by side comparison selector */}
-              <PromptOptimizer
-                original={activeAnalysis.originalPrompt}
-                optimized={activeAnalysis.optimized}
-                onApply={onLoadPromptToEditor}
-              />
-            </div>
-          ) : (
-            <GlassCard hoverEffect={false} className="py-16 text-center border-dashed border-white/10">
-              <div className="p-4 bg-slate-900/60 rounded-full border border-white/5 w-16 h-16 flex items-center justify-center mx-auto mb-4 text-slate-400">
-                <Search size={24} />
+                    {cat}
+                  </button>
+                ))}
               </div>
-              <h4 className="font-bold text-slate-200 text-sm">No Active Evaluation Selected</h4>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
-                Run a prompt evaluation in the analyzer, or select a log card from the history sidebar log to review detailed optimized variants.
-              </p>
+
+              {/* List scrollbox */}
+              <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-1">
+                {filteredHistory.length > 0 ? (
+                  filteredHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setActiveAnalysis(item)}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative group flex justify-between items-center ${
+                        activeAnalysis?.id === item.id
+                          ? "bg-blue-500/10 border-blue-500/30"
+                          : "bg-slate-900/10 border-white/5 hover:border-blue-500/25 hover:bg-slate-900/40"
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          {item.isValid === false ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-slate-900 uppercase text-amber-500 border-amber-500/20">
+                              ⚠️ Invalid
+                            </span>
+                          ) : (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border bg-slate-900 uppercase ${
+                              item.scores.overall >= 80 ? "text-emerald-400 border-emerald-500/20" : "text-amber-400 border-amber-500/20"
+                            }`}>
+                              {item.scores.overall}%
+                            </span>
+                          )}
+                          {item.category && (
+                            <span className="text-[9px] text-slate-500 font-bold uppercase">{item.category}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-300 truncate font-mono">{item.originalPrompt}</p>
+                      </div>
+
+                      {/* Actions on hover/select */}
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id);
+                          }}
+                          className={`p-1.5 rounded-lg border border-transparent hover:bg-slate-800 transition-colors ${
+                            item.isFavorite ? "text-yellow-400" : "text-slate-500 hover:text-yellow-400"
+                          }`}
+                        >
+                          <Star size={11} className={item.isFavorite ? "fill-current" : ""} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteAnalysis(item.id);
+                          }}
+                          className="p-1.5 rounded-lg border border-transparent hover:bg-red-500/15 text-slate-500 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-xs text-slate-500 italic">No search entries found.</div>
+                )}
+              </div>
             </GlassCard>
-          )}
+          </div>
+
+          {/* Right Panel: selected item details */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            {activeAnalysis ? (
+              activeAnalysis.isValid === false ? (
+                <InvalidPromptWarning onSelectExample={onLoadPromptToEditor} />
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {/* Header card with action bars */}
+                  <GlassCard hoverEffect={false} className="py-4 px-6 border-white/5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-md font-bold text-slate-100 flex items-center gap-1.5">
+                          <Layers size={16} className="text-blue-500" /> Analysis Report Details
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Prompt categorized as <strong className="text-blue-300">{activeAnalysis.category || "General"}</strong> • 
+                          Analyzed {new Date(activeAnalysis.analyzedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onLoadPromptToEditor(activeAnalysis.originalPrompt)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-300 hover:bg-blue-500/20 transition-all flex items-center gap-1"
+                        >
+                          <Copy size={12} /> Edit Original
+                        </button>
+
+                        <button
+                          onClick={() => handleDownloadPdf(activeAnalysis)}
+                          disabled={exportingId === activeAnalysis.id}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-white/5 flex items-center gap-1"
+                        >
+                          <FileDown size={12} /> {exportingId === activeAnalysis.id ? "Saving..." : "PDF"}
+                        </button>
+
+                        <button
+                          onClick={() => handleExportJson(activeAnalysis)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-white/5 flex items-center gap-1"
+                          title="Export analysis as JSON"
+                        >
+                          <Download size={12} /> JSON
+                        </button>
+                      </div>
+                    </div>
+                  </GlassCard>
+
+                  {/* Score breakdown charts */}
+                  <ScoringSystem scores={activeAnalysis.scores} />
+
+                  {/* Feedbacks bullet box list */}
+                  <DetailedFeedback feedback={activeAnalysis.feedback} />
+
+                  {/* Side by side comparison selector */}
+                  <PromptOptimizer
+                    original={activeAnalysis.originalPrompt}
+                    optimized={activeAnalysis.optimized}
+                    originalScore={activeAnalysis.scores.overall}
+                    onApply={onLoadPromptToEditor}
+                    onReanalyze={async (text) => {
+                      await analyzePrompt(text, activeAnalysis.category);
+                    }}
+                  />
+                </div>
+              )
+            ) : (
+              <GlassCard hoverEffect={false} className="py-16 text-center border-dashed border-white/10">
+                <div className="p-4 bg-slate-900/60 rounded-full border border-white/5 w-16 h-16 flex items-center justify-center mx-auto mb-4 text-slate-400">
+                  <Search size={24} />
+                </div>
+                <h4 className="font-bold text-slate-200 text-sm">No Active Evaluation Selected</h4>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+                  Run a prompt evaluation in the analyzer, or select a log card from the history sidebar log to review detailed optimized variants.
+                </p>
+              </GlassCard>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <GlassCard hoverEffect={false} className="py-16 text-center border-dashed border-white/10 flex flex-col items-center justify-center gap-6 max-w-2xl mx-auto w-full mt-4">
+          <div className="p-5 bg-blue-500/10 border border-blue-500/20 rounded-full w-20 h-20 flex items-center justify-center text-blue-400 animate-pulse">
+            <Sparkles size={36} />
+          </div>
+          <div className="flex flex-col gap-2 max-w-md">
+            <h3 className="text-2xl font-extrabold text-slate-100 tracking-tight">Welcome to PromptScore AI</h3>
+            <h4 className="text-sm font-semibold text-blue-400">You have not analyzed any prompts yet.</h4>
+            <p className="text-xs text-slate-500 leading-relaxed mt-2">
+              No prompts analyzed yet. Start by analyzing your first prompt.
+            </p>
+          </div>
+          <button
+            onClick={() => onLoadPromptToEditor("")}
+            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow-lg active:scale-[0.98] mt-2 flex items-center gap-2"
+          >
+            Analyze First Prompt <ArrowRight size={14} />
+          </button>
+        </GlassCard>
+      )}
     </div>
   );
 }

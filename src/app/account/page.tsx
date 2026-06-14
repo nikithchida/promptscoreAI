@@ -115,7 +115,7 @@ export default function AccountPage() {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 radial-glow-blue opacity-20 pointer-events-none" />
 
               <h3 className="text-sm font-bold text-slate-200 mb-4 uppercase tracking-wider border-b border-white/5 pb-2">
-                Active Subscription Plan
+                Account Information
               </h3>
 
               <div className="flex flex-col gap-4">
@@ -124,8 +124,8 @@ export default function AccountPage() {
                     <Award size={18} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Membership Tier</span>
-                    <h4 className="text-sm font-bold text-slate-200">{user.plan} Account Plan</h4>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase">Account Role</span>
+                    <h4 className="text-sm font-bold text-slate-200">Developer</h4>
                   </div>
                 </div>
 
@@ -149,21 +149,6 @@ export default function AccountPage() {
                     <span className="text-[10px] text-slate-500 font-bold uppercase">API Verification</span>
                     <h4 className="text-sm font-bold text-emerald-400">Sandbox Verified</h4>
                   </div>
-                </div>
-
-                <div className="mt-6 border-t border-white/5 pt-6 flex flex-col gap-2.5">
-                  <button 
-                    onClick={() => alert("Billing updates are locked in demo sandbox mode.")}
-                    className="w-full py-2.5 rounded-xl bg-slate-900 border border-white/10 hover:border-blue-500/20 text-slate-300 text-xs font-semibold transition-colors"
-                  >
-                    Modify Billing Details
-                  </button>
-                  <button 
-                    onClick={() => alert("Subscription cancellations are locked in demo sandbox mode.")}
-                    className="w-full py-2.5 rounded-xl bg-transparent border border-red-500/10 hover:bg-red-500/5 text-slate-400 hover:text-red-400 text-xs font-semibold transition-colors"
-                  >
-                    Cancel Membership Plan
-                  </button>
                 </div>
               </div>
             </GlassCard>

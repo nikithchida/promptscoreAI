@@ -41,66 +41,46 @@ export function PublicNavbar({ activeSection = "" }: PublicNavbarProps) {
             Features
           </a>
           <Link 
+            href="/templates" 
+            className="transition-colors hover:text-blue-400 text-slate-300"
+          >
+            Template
+          </Link>
+          <Link 
             href="/compare" 
             className="transition-colors hover:text-blue-400 text-slate-300"
           >
             Compare
           </Link>
-          <Link 
-            href="/templates" 
-            className="transition-colors hover:text-blue-400 text-slate-300"
-          >
-            Templates
-          </Link>
-          <Link 
-            href="/pricing" 
-            className={`transition-colors hover:text-blue-400 ${
-              activeSection === "pricing" 
-                ? "text-blue-400 font-bold" 
-                : "text-slate-300"
-            }`}
-          >
-            Pricing
-          </Link>
         </nav>
-
+ 
         <div className="flex items-center gap-3">
+          <Link
+            href="/analyzer"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow active:scale-[0.98]"
+          >
+            Go to Analyzer
+          </Link>
+          <Link
+            href="/dashboard"
+            className="px-4 py-2 rounded-xl bg-slate-900 border border-white/10 hover:border-blue-500/30 text-slate-200 text-xs font-bold transition-all shadow"
+          >
+            Dashboard
+          </Link>
           {user ? (
-            <>
-              <Link
-                href="/analyzer"
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow active:scale-[0.98]"
-              >
-                Go to Analyzer
-              </Link>
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 rounded-xl bg-slate-900 border border-white/10 hover:border-blue-500/30 text-slate-200 text-xs font-bold transition-all shadow"
-              >
-                Dashboard
-              </Link>
-              <button
-                onClick={logout}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors font-semibold"
-              >
-                Logout
-              </button>
-            </>
+            <button
+              onClick={logout}
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors font-semibold"
+            >
+              Logout
+            </button>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors font-semibold"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow active:scale-[0.98]"
-              >
-                Get Started
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors font-semibold"
+            >
+              Login
+            </Link>
           )}
         </div>
       </div>

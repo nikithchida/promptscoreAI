@@ -88,7 +88,7 @@ export function AppLayout({ children, activeTab }: AppLayoutProps) {
             </div>
             <div className="min-w-0 flex-1">
               <h5 className="text-xs font-bold text-slate-200 truncate">{user.name || "Prompt Engineer"}</h5>
-              <span className="text-[10px] text-blue-400 font-semibold uppercase">{user.plan} Account</span>
+              <span className="text-[10px] text-blue-400 font-semibold uppercase">Developer Account</span>
             </div>
           </div>
 
@@ -147,7 +147,7 @@ export function AppLayout({ children, activeTab }: AppLayoutProps) {
                 </div>
                 <div>
                   <h5 className="text-sm font-bold text-slate-200">{user.name || "Prompt Engineer"}</h5>
-                  <span className="text-[10px] text-blue-400 font-semibold uppercase">{user.plan} Account</span>
+                  <span className="text-[10px] text-blue-400 font-semibold uppercase">Developer Account</span>
                 </div>
               </div>
               <button

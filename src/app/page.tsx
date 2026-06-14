@@ -1,31 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import { runLocalEvaluation } from "@/contexts/prompt-context";
-import { isValidPrompt } from "@/lib/prompt-validator";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
-  Sparkles, ArrowRight, CheckCircle2, ShieldAlert, Cpu,
-  Eye, FileDown, Download, Quote
+  Sparkles, ArrowRight, CheckCircle2, ShieldAlert
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PublicNavbar } from "@/components/public-navbar";
 
 export default function LandingPage() {
   const { user } = useAuth();
-  const [demoPrompt, setDemoPrompt] = useState("Write a python script that cleans CSV data.");
-  const [activeFeatureTab, setActiveFeatureTab] = useState<"analysis" | "optimization" | "templates" | "sharing" | "analytics">("analysis");
-  
-  // Interactive Demo State
-  const [demoStep, setDemoStep] = useState<"input" | "analyze" | "optimize" | "export">("input");
   
   // Active Navigation Scroll Tracking State
   const [activeSection, setActiveSection] = useState("");
 
   useEffect(() => {
-    const sections = ["problems", "workflow", "platform-in-action", "features"];
+    const sections = ["problems", "workflow", "features"];
     const observerOptions = {
       root: null,
       rootMargin: "-100px 0px -50% 0px",
@@ -53,38 +45,25 @@ export default function LandingPage() {
     };
   }, []);
 
-  const handleScrollToDemo = () => {
-    const element = document.getElementById("platform-in-action");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const stats = [
-    { value: "4.8M+", label: "Prompts Evaluated" },
-    { value: "1.2M+", label: "Reports Generated" },
-    { value: "+184%", label: "Average Efficacy Increase" },
-  ];
-
   const promptProblems = [
     {
-      title: "Vague Instructions",
-      description: "AI models output generic fluff when tasks aren't specified with precision or clear parameters.",
-      badge: "Inconsistent Outputs"
+      title: "Low Quality Prompts",
+      description: "Simple, unrefined queries produce generic and unhelpful fluff instead of precise solutions.",
+      badge: "Subpar Results"
     },
     {
       title: "Missing Context",
-      description: "Failing to set up a persona, target audience, or background scenario leads to flat, out-of-context answers.",
+      description: "Failing to establish a persona, goal, or background situation limits the model's accuracy.",
       badge: "Flat Responses"
     },
     {
-      title: "Poor Formatting Details",
-      description: "Outputs generated without strict formatting constraints (e.g. JSON schemas, markdown lists) break integration pipelines.",
+      title: "Weak Instructions",
+      description: "Omitting constraints, formatting guidelines, and clear steps leads to parsing and logic failures.",
       badge: "Parsing Errors"
     },
     {
-      title: "Low Predictability",
-      description: "Omitting positive and negative boundary conditions means response formats drift wildly across queries.",
+      title: "Poor Output Consistency",
+      description: "Vague boundary parameters cause model output format and quality to drift wildly across runs.",
       badge: "High Variance"
     }
   ];
@@ -92,164 +71,48 @@ export default function LandingPage() {
   const steps = [
     {
       step: "01",
-      title: "Ingest & Analyze",
-      description: "Paste your prompt into the analyzer, choose a target category, and run a structural diagnostics scan."
+      title: "Analyze Prompt",
+      description: "Paste your prompt into the analyzer, select your target category, and trigger the diagnostics scan."
     },
     {
       step: "02",
-      title: "Detect Vulnerabilities",
-      description: "Our rules engine audits missing contexts, vague parameters, missing boundary rules, and constraints."
+      title: "Detect Weaknesses",
+      description: "Audits missing contexts, vague parameters, missing boundary rules, and output formatting errors."
     },
     {
       step: "03",
-      title: "Variational Tuning",
-      description: "Instantly draft optimized alternatives: Professional Expert, Concise Short, or Beginner guides."
+      title: "Optimize Prompt",
+      description: "Instantly draft optimized alternatives with tailored personas and custom constraint rules applied."
     },
     {
       step: "04",
-      title: "Export & Integrate",
-      description: "Copy codeblocks, export JSON diagnostics schemas, or download branded PDF reports for your team."
+      title: "Export Results",
+      description: "Copy refined text directly, export full JSON schemas, or generate printable PDF diagnostic reports."
     }
   ];
 
-  const features = {
-    analysis: [
-      { title: "7-Metric Audit", desc: "Evaluate Clarity, Specificity, Context, Structure, Creativity, and Predictability parameters." },
-      { title: "Grade Boundaries", desc: "Grades calculated from F to A+ using industry-standard engineering benchmarks." },
-      { title: "Vulnerability Check", desc: "Flags missing parameters, unanchored context fields, and open-ended queries." }
-    ],
-    optimization: [
-      { title: "Style Rewriting", desc: "Alternative drafts optimized for varying developer, business, or educational roles." },
-      { title: "Constraints Tuning", desc: "Automatically inject negative constraints to stop fluff or corporate jargon." },
-      { title: "One-Click Apply", desc: "Instantly feed optimized variants back into your active workspace editor." }
-    ],
-    templates: [
-      { title: "Placeholder Variable", desc: "Use bracketed placeholders like [Language] to stitch reusable prompt configurations." },
-      { title: "Pre-Built Libraries", desc: "Quick-start templates tailored for developer refactoring, SEO optimization, and outreach." },
-      { title: "Custom Save", desc: "Build, categorize, search, and favorite your team's custom prompt assets." }
-    ],
-    sharing: [
-      { title: "JSON Schemas", desc: "Export full diagnostic models to share across prompt pipelines." },
-      { title: "Branded PDF Logs", desc: "Print clean summaries including scorecards, original vs optimized text, and tips." },
-      { title: "Raw Markdown Copies", desc: "Export and copy cleaned versions instantly to your system clipboard." }
-    ],
-    analytics: [
-      { title: "Score Progress Charts", desc: "Observe prompts score trajectories and usage trends over time on your dashboard." },
-      { title: "Historical Archives", desc: "Searchable logs filterable by date, favorites, score ranges, and category tags." },
-      { title: "Team Efficacy Tracking", desc: "Evaluate prompts across categories to standardize team LLM outputs." }
-    ]
-  };
-
-  const testimonials = [
+  const featuresList = [
     {
-      quote: "PromptScore AI changed our entire workflow. We stopped guessing how prompts would perform across models and started testing them systematically.",
-      author: "Alex Rivera",
-      role: "Lead AI Architect, Vercel",
-      avatar: "AR"
+      title: "Prompt Analysis",
+      description: "Audits clarity, specificity, and structure with instant grade boundaries from F to A+."
     },
     {
-      quote: "The variational compiler is incredible. Translating a developer prompt into a concise block saved us hours of API tokens.",
-      author: "Sarah Chen",
-      role: "Sr. Product Manager, Stripe",
-      avatar: "SC"
+      title: "Prompt Optimization",
+      description: "Drafts optimized versions instantly, injecting expert personas and negative constraints."
     },
     {
-      quote: "Before PromptScore, our templates were a mess. The bracketed placeholder variable compiler standardizes how our copywriting team queries LLMs.",
-      author: "Marcus Vance",
-      role: "Developer Advocate, Supabase",
-      avatar: "MV"
+      title: "Prompt Comparison",
+      description: "Compares prompt variations side-by-side to track score improvements and response adjustments."
+    },
+    {
+      title: "Template Library",
+      description: "Builds, searches, and saves customized prompt templates with dynamic placeholder variables."
+    },
+    {
+      title: "Report Export",
+      description: "Exports diagnostic JSON schemas, copies clean markdown, or downloads print-ready PDF reports."
     }
   ];
-
-  // Dynamic evaluation for Interactive Demo
-  const demoAnalysis = useMemo(() => {
-    return runLocalEvaluation(demoPrompt, "General");
-  }, [demoPrompt]);
-
-  const getGrade = (score: number) => {
-    if (score >= 95) return { text: "A+", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/5", label: "Excellent Prompt" };
-    if (score >= 90) return { text: "A", color: "text-teal-400 border-teal-500/30 bg-teal-500/5", label: "Highly Optimised" };
-    if (score >= 80) return { text: "B", color: "text-blue-400 border-blue-500/30 bg-blue-500/5", label: "Good Structure" };
-    if (score >= 70) return { text: "C", color: "text-amber-400 border-amber-500/30 bg-amber-500/5", label: "Needs Improvement" };
-    if (score >= 60) return { text: "D", color: "text-orange-400 border-orange-500/30 bg-orange-500/5", label: "Weak Structure" };
-    return { text: "F", color: "text-red-400 border-red-500/30 bg-red-500/5", label: "Needs Redesign" };
-  };
-
-  const handleExportDemoJson = (analysis: any) => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(analysis, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `promptscore_demo_report_${analysis.id}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  const handleDownloadDemoPdf = (analysis: any) => {
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>PromptScore AI Analysis Report</title>
-            <style>
-              body { font-family: sans-serif; color: #1e293b; padding: 40px; }
-              h1 { color: #3b82f6; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-              .meta { color: #64748b; font-size: 14px; margin-bottom: 20px; }
-              .score-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
-              .scores-grid { display: grid; grid-template-cols: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
-              .score-bar { background: #e2e8f0; height: 10px; border-radius: 5px; margin-top: 5px; }
-              .score-fill { background: #3b82f6; height: 100%; border-radius: 5px; }
-              .prompt-section { background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 15px; font-family: monospace; font-size: 13px; white-space: pre-wrap; margin-bottom: 25px; }
-              .list-group { margin-bottom: 20px; }
-              .list-group h3 { color: #334155; margin-bottom: 8px; font-size: 16px;}
-              .list-group ul { padding-left: 20px; margin: 0; }
-              .list-group li { margin-bottom: 6px; font-size: 14px; }
-            </style>
-          </head>
-          <body>
-            <h1>PromptScore AI Analysis Report</h1>
-            <div class="meta">Analyzed on: ${new Date(analysis.analyzedAt).toLocaleString()} | Category: ${analysis.category || "General"}</div>
-            
-            <div class="score-box">
-              <h2>Overall Score: ${analysis.scores.overall}/100</h2>
-              <div class="scores-grid">
-                <div>Clarity: ${analysis.scores.clarity}% <div class="score-bar"><div class="score-fill" style="width: ${analysis.scores.clarity}%"></div></div></div>
-                <div>Specificity: ${analysis.scores.specificity}% <div class="score-bar"><div class="score-fill" style="width: ${analysis.scores.specificity}%"></div></div></div>
-                <div>Context: ${analysis.scores.context}% <div class="score-bar"><div class="score-fill" style="width: ${analysis.scores.context}%"></div></div></div>
-                <div>Structure: ${analysis.scores.structure}% <div class="score-bar"><div class="score-fill" style="width: ${analysis.scores.structure}%"></div></div></div>
-              </div>
-            </div>
-
-            <div class="list-group">
-              <h3>Original Prompt</h3>
-              <div class="prompt-section">${analysis.originalPrompt}</div>
-            </div>
-
-            <div class="list-group">
-              <h3>Strengths</h3>
-              <ul>${analysis.feedback.strengths.map((s: string) => `<li>${s}</li>`).join("")}</ul>
-            </div>
-
-            <div class="list-group">
-              <h3>Weaknesses</h3>
-              <ul>${analysis.feedback.weaknesses.map((w: string) => `<li>${w}</li>`).join("")}</ul>
-            </div>
-
-            <div class="list-group">
-              <h3>Optimized Version</h3>
-              <div class="prompt-section">${analysis.optimized.standard}</div>
-            </div>
-            
-            <script>
-              window.onload = function() { window.print(); window.close(); }
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#0B1020] grid-bg relative overflow-hidden flex flex-col justify-between scroll-smooth selection:bg-blue-500/20 selection:text-blue-200">
@@ -284,9 +147,9 @@ export default function LandingPage() {
               transition={{ duration: 0.4, delay: 0.05 }}
               className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight text-white animate-fade-in"
             >
-              Consistent LLM Outputs Require{" "}
+              Grade, Improve and Compare{" "}
               <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent">
-                Structured Prompts.
+                AI Prompts.
               </span>
             </motion.h1>
 
@@ -309,14 +172,8 @@ export default function LandingPage() {
                 href={user ? "/analyzer" : "/register"}
                 className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow transition-all active:scale-[0.98] group"
               >
-                Go to Workspace <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                Open Workspace <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
-              <button
-                onClick={handleScrollToDemo}
-                className="px-6 py-3 rounded-xl bg-transparent border border-slate-700 hover:bg-slate-800 text-slate-300 font-bold text-xs transition-all"
-              >
-                Try Live Analyzer
-              </button>
             </motion.div>
           </div>
 
@@ -443,11 +300,43 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 3. Workflow Section */}
+        {/* 3. Features Section */}
+        <section id="features" className="scroll-mt-20 flex flex-col gap-10">
+          <div className="text-center max-w-xl mx-auto flex flex-col gap-2">
+            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Feature Inventory</span>
+            <h2 className="text-2xl md:text-3xl font-black text-white">Full-Stack Prompt Toolkit</h2>
+            <p className="text-slate-400 text-xs">Explore structural metrics, category templates, comparison tools, and export systems.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4 justify-center">
+            {featuresList.map((item, idx) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                className={idx === 4 ? "md:col-span-2 lg:col-span-1" : ""}
+              >
+                <GlassCard hoverEffect={true} className="border-white/5 h-full flex flex-col justify-between p-6">
+                  <div>
+                    <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <h4 className="font-bold text-sm text-slate-200">{item.title}</h4>
+                    <p className="text-slate-400 text-xs mt-2 leading-relaxed">{item.description}</p>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* 4. Workflow Section */}
         <section id="workflow" className="scroll-mt-20 flex flex-col gap-10">
           <div className="text-center max-w-xl mx-auto flex flex-col gap-2">
             <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Streamlined Pipeline</span>
-            <h2 className="text-2xl md:text-3xl font-black text-white">How PromptScore AI Works</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-white">How It Works</h2>
             <p className="text-slate-400 text-xs">Four simple steps to refactor instructions into structured, reliable prompts.</p>
           </div>
 
@@ -473,307 +362,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 4. Platform In Action (Interactive Walkthrough Demo) */}
-        <section id="platform-in-action" className="scroll-mt-20 flex flex-col gap-8">
-          <div className="text-center max-w-xl mx-auto flex flex-col gap-1">
-            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Interactive Walkthrough</span>
-            <h2 className="text-2xl font-black text-white">Platform In Action</h2>
-            <p className="text-slate-400 text-xs">Type a prompt and click the phases below to see our core optimizer in action.</p>
-          </div>
-
-          <div className="w-full bg-slate-950/45 rounded-2xl border border-white/5 p-5 md:p-6 shadow-xl">
-            {/* Demo Stepper Buttons */}
-            <div className="grid grid-cols-4 gap-2 border-b border-white/5 pb-4 mb-6">
-              {[
-                { id: "input", label: "01 Ingest Prompt" },
-                { id: "analyze", label: "02 Scan Weaknesses" },
-                { id: "optimize", label: "03 Compile Variants" },
-                { id: "export", label: "04 Ready Export" }
-              ].map((stepItem) => (
-                <button
-                  key={stepItem.id}
-                  onClick={() => setDemoStep(stepItem.id as any)}
-                  className={`py-2 rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider ${
-                    demoStep === stepItem.id
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-slate-900/40 text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  {stepItem.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Step Content Rendering */}
-            <div className="min-h-[160px] flex items-center justify-center">
-              <AnimatePresence mode="wait">
-                {demoStep === "input" && (
-                  <motion.div
-                    key="input-view"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="w-full flex flex-col gap-3 text-left"
-                  >
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold text-slate-200 uppercase">Input Text Editor</h4>
-                      <span className="text-[10px] text-slate-500">Characters: {demoPrompt.length}</span>
-                    </div>
-                    <textarea
-                      value={demoPrompt}
-                      onChange={(e) => setDemoPrompt(e.target.value)}
-                      className="w-full h-32 p-4 rounded-xl border border-white/5 bg-slate-900/20 text-xs font-mono text-slate-200 placeholder-slate-500 focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/40 focus:outline-none resize-none leading-relaxed"
-                      placeholder="Type or paste your prompt here to see the optimizer in action..."
-                    />
-                  </motion.div>
-                )}
- 
-                {demoStep === "analyze" && (
-                  <motion.div
-                    key="analyze-view"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
-                  >
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-200 mb-2 uppercase">
-                        Scan score: {demoAnalysis.scores.overall}/100
-                      </h4>
-                      <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden mb-3">
-                        <div 
-                          className={`h-full transition-all duration-500 ${
-                            demoAnalysis.isValid === false
-                              ? "bg-red-500 w-[1%]"
-                              : demoAnalysis.scores.overall >= 80
-                              ? "bg-emerald-500"
-                              : demoAnalysis.scores.overall >= 50
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
-                          }`}
-                          style={{ width: `${demoAnalysis.isValid === false ? 1 : demoAnalysis.scores.overall}%` }}
-                        />
-                      </div>
-                      <p className="text-[11px] text-slate-400">
-                        {demoAnalysis.isValid === false
-                          ? "Fail metrics checked: The input is not a valid AI prompt structure."
-                          : demoAnalysis.scores.overall >= 80
-                          ? "Success metrics met: Explicit persona assigned, formatting constraints defined, clear goal context."
-                          : "Fail metrics checked: Missing key attributes like persona, constraints, or format rules."}
-                      </p>
-                    </div>
-                    <div 
-                      className={`p-3 border rounded-xl flex flex-col gap-2 ${
-                        demoAnalysis.isValid === false || demoAnalysis.scores.overall < 80
-                          ? "bg-red-500/5 border-red-500/20 text-red-400"
-                          : "bg-emerald-500/5 border-emerald-500/20 text-emerald-400"
-                      }`}
-                    >
-                      <span className="text-[10px] font-bold uppercase flex items-center gap-1">
-                        {demoAnalysis.isValid === false || demoAnalysis.scores.overall < 80 ? (
-                          <ShieldAlert size={12} />
-                        ) : (
-                          <CheckCircle2 size={12} className="text-emerald-400" />
-                        )} 
-                        {demoAnalysis.isValid === false
-                          ? "Invalid Prompt Structure"
-                          : "Flagged Diagnostics"}
-                      </span>
-                      <ul className="text-[10px] text-slate-400 flex flex-col gap-1 list-disc pl-4">
-                        {demoAnalysis.isValid === false ? (
-                          <>
-                            <li>
-                              Reason: {isValidPrompt(demoPrompt).reason || "No instruction or task detected."}
-                            </li>
-                            <li>
-                              A valid prompt needs instruction verbs (e.g. create, clean, explain) and at least 3 meaningful words.
-                            </li>
-                          </>
-                        ) : (
-                          <>
-                            {demoAnalysis.feedback.weaknesses.map((w, idx) => (
-                              <li key={idx}>{w}</li>
-                            ))}
-                            {demoAnalysis.feedback.missing.map((m, idx) => (
-                              <li key={`m-${idx}`}>{m}</li>
-                            ))}
-                            {demoAnalysis.feedback.weaknesses.length === 0 && demoAnalysis.feedback.missing.length === 0 && (
-                              <li>No significant weaknesses flagged! Your prompt follows best engineering practices.</li>
-                            )}
-                          </>
-                        )}
-                      </ul>
-                    </div>
-                  </motion.div>
-                )}
- 
-                {demoStep === "optimize" && (
-                  <motion.div
-                    key="optimize-view"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="w-full flex flex-col gap-3 text-left"
-                  >
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold text-slate-200 uppercase">
-                        {demoAnalysis.isValid === false
-                          ? "Optimization Failed"
-                          : `Optimized Rewrite (Grade ${getGrade(demoAnalysis.scores.overall).text})`}
-                      </h4>
-                      <span className="text-[10px] text-emerald-400 font-bold uppercase">
-                        {demoAnalysis.isValid === false ? "Score: 0" : `Score: ${Math.max(90, demoAnalysis.scores.overall + 10)}`}
-                      </span>
-                    </div>
-                    {demoAnalysis.isValid === false ? (
-                      <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/[0.02] text-xs font-mono text-slate-400 whitespace-pre-wrap leading-relaxed border-l-2 border-red-500">
-                        Please enter a valid prompt in Step 1 to generate optimized variations.
-                      </div>
-                    ) : (
-                      <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.02] text-xs font-mono text-slate-200 whitespace-pre-wrap leading-relaxed border-l-2 border-blue-500">
-                        {demoAnalysis.optimized.standard}
-                      </div>
-                    )}
-                  </motion.div>
-                )}
- 
-                {demoStep === "export" && (
-                  <motion.div
-                    key="export-view"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="w-full flex flex-col gap-4 text-left items-center justify-center py-4"
-                  >
-                    <h4 className="text-xs font-bold text-slate-300 uppercase font-bold">
-                      {demoAnalysis.isValid === false
-                        ? "Export Unavailable"
-                        : "Diagnostics Model Exports Ready"}
-                    </h4>
-                    {demoAnalysis.isValid === false ? (
-                      <p className="text-[11px] text-slate-400 text-center max-w-sm">
-                        Please enter a valid prompt in Step 1 to unlock prompt copy and diagnostic report downloads.
-                      </p>
-                    ) : (
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(demoAnalysis.optimized.standard);
-                            alert("Copied optimized prompt to clipboard!");
-                          }}
-                          className="px-4 py-2 rounded-lg text-[10px] font-bold bg-blue-600 text-white flex items-center gap-1 hover:bg-blue-500 shadow transition-colors"
-                        >
-                          <Eye size={12} /> Copy Prompt
-                        </button>
-                        <button 
-                          onClick={() => handleDownloadDemoPdf(demoAnalysis)}
-                          className="px-4 py-2 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 border border-white/5 text-slate-300 flex items-center gap-1 transition-colors"
-                        >
-                          <FileDown size={12} /> Download PDF Report
-                        </button>
-                        <button 
-                          onClick={() => handleExportDemoJson(demoAnalysis)}
-                          className="px-4 py-2 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 border border-white/5 text-slate-300 flex items-center gap-1 transition-colors"
-                        >
-                          <Download size={12} /> Export JSON Schema
-                        </button>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. Features Showcase Section */}
-        <section id="features" className="scroll-mt-20 flex flex-col gap-10">
-          <div className="text-center max-w-xl mx-auto flex flex-col gap-2">
-            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Feature Inventory</span>
-            <h2 className="text-2xl md:text-3xl font-black text-white">Full-Stack Prompt Toolkit</h2>
-            <p className="text-slate-400 text-xs">Explore structural metrics, category templates, usage analytics logs, and export systems.</p>
-          </div>
-
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-wrap gap-1 bg-slate-950/80 p-1 rounded-xl border border-white/5 justify-center max-w-lg mx-auto w-full">
-              {Object.keys(features).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveFeatureTab(tab as any)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider ${
-                    activeFeatureTab === tab
-                      ? "bg-blue-600 text-white shadow"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-              <AnimatePresence mode="wait">
-                {features[activeFeatureTab].map((item, idx) => (
-                  <motion.div
-                    key={item.title}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    transition={{ duration: 0.3, delay: idx * 0.05 }}
-                  >
-                    <GlassCard hoverEffect={false} className="border-white/5 h-full">
-                      <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
-                        <CheckCircle2 size={16} />
-                      </div>
-                      <h4 className="font-bold text-sm text-slate-200">{item.title}</h4>
-                      <p className="text-slate-400 text-xs mt-2 leading-relaxed">{item.desc}</p>
-                    </GlassCard>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </div>
-        </section>
-
-        {/* 6. Testimonials Section */}
-        <section className="flex flex-col gap-10">
-          <div className="text-center max-w-xl mx-auto flex flex-col gap-2">
-            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">User Reviews</span>
-            <h2 className="text-2xl md:text-3xl font-black text-white">What AI Builders Say</h2>
-            <p className="text-slate-400 text-xs">Discover how teams standardise queries and minimize LLM response variance.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((test, idx) => (
-              <motion.div
-                key={test.author}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.3, delay: idx * 0.1 }}
-              >
-                <GlassCard hoverEffect={false} className="flex flex-col justify-between h-full border-slate-800">
-                  <div className="flex flex-col gap-4">
-                    <Quote size={20} className="text-blue-500/40" />
-                    <p className="text-slate-300 text-xs italic leading-relaxed">"{test.quote}"</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 border-t border-white/5 pt-4 mt-6">
-                    <div className="h-8 w-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-[10px] font-bold text-blue-300">
-                      {test.avatar}
-                    </div>
-                    <div>
-                      <h5 className="text-xs font-bold text-slate-200">{test.author}</h5>
-                      <span className="text-[10px] text-slate-500">{test.role}</span>
-                    </div>
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* 7. Final Call To Action */}
+        {/* 5. Final Call To Action */}
         <motion.section 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -784,24 +373,18 @@ export default function LandingPage() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 radial-glow-blue opacity-30 pointer-events-none" />
             
             <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight">
-              Start Building Better Prompts Today
+              Ready to improve your prompts?
             </h2>
             <p className="text-slate-400 text-xs md:text-sm max-w-xl leading-relaxed">
               Standardize your prompt pipeline. Reduce LLM API variance, optimize token length, and compile clean variables now.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
+            <div className="flex flex-row items-center gap-4 mt-2">
               <Link
-                href="/analyzer"
+                href={user ? "/analyzer" : "/register"}
                 className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow transition-all hover:scale-102 active:scale-95"
               >
-                Try Analyzer
-              </Link>
-              <Link
-                href={user ? "/dashboard" : "/register"}
-                className="px-6 py-2.5 rounded-xl bg-slate-900 border border-white/10 hover:border-blue-500/30 text-slate-200 font-bold text-xs transition-all flex items-center gap-1 group"
-              >
-                Go to Dashboard <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                Open Workspace
               </Link>
             </div>
           </GlassCard>
@@ -809,7 +392,7 @@ export default function LandingPage() {
 
       </div>
 
-      {/* 8. Footer */}
+      {/* 6. Footer */}
       <footer className="w-full glass-panel border-t border-white/5 py-8 mt-24 text-center text-xs text-slate-500 bg-[#070b16]/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <span>© 2026 PromptScore AI. All rights reserved. pair-programmed by Antigravity.</span>
